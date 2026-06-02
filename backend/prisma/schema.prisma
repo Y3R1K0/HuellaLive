@@ -1,0 +1,295 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  HUMAN
+  SHELTER
+  ADMIN
+}
+
+enum ShelterStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum AnimalStatus {
+  AVAILABLE
+  RECOVERING
+  PREGNANT
+  ADOPTED
+  OTHER
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String?
+  googleId     String?  @unique
+  avatarUrl    String?
+  role         Role     @default(HUMAN)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  shelterProfile      ShelterProfile?
+  videos              Video[]
+  likes               Like[]
+  follows             Follow[]
+  chatsAsHuman        Chat[]            @relation("HumanChats")
+  messages            Message[]
+  adoptionRequests    AdoptionRequest[]
+  donations           Donation[]
+  galletaTransactions GalletaTransaction[]
+  animalFeeds         AnimalFeed[]
+  badges              UserBadge[]
+  notifications       Notification[]
+  adoptedAnimals      Animal[]          @relation("AdoptedAnimals")
+
+  @@map("users")
+}
+
+model ShelterProfile {
+  id               String        @id @default(uuid())
+  userId           String        @unique
+  user             User          @relation(fields: [userId], references: [id])
+  coverUrl         String?
+  description      String?
+  location         String?
+  phone            String?
+  status           ShelterStatus @default(PENDING)
+  verificationDocs String[]
+  createdAt        DateTime      @default(now())
+
+  animals          Animal[]
+  chats            Chat[]        @relation("ShelterChats")
+
+  @@map("shelter_profiles")
+}
+
+model Animal {
+  id                  String       @id @default(uuid())
+  name                String
+  species             String
+  breed               String?
+  age                 Int?
+  description         String?
+  photoUrl            String?
+  status              AnimalStatus @default(AVAILABLE)
+  credentialUsername  String       @unique
+  credentialPassword  String
+  shelterId           String?
+  shelter             ShelterProfile? @relation(fields: [shelterId], references: [id])
+  adoptedById         String?
+  adoptedBy           User?        @relation("AdoptedAnimals", fields: [adoptedById], references: [id])
+  adoptedByPublic     Boolean      @default(true)
+  originalShelterId   String?
+  createdAt           DateTime     @default(now())
+
+  card             AnimalCard?
+  videos           Video[]
+  adoptionRequests AdoptionRequest[]
+  animalFeeds      AnimalFeed[]
+
+  @@map("animals")
+}
+
+model AnimalCard {
+  id           String    @id @default(uuid())
+  animalId     String    @unique
+  animal       Animal    @relation(fields: [animalId], references: [id])
+  sex          String?
+  birthDate    DateTime?
+  isSterilized Boolean   @default(false)
+  vaccines     Json      @default("[]")
+  controls     Json      @default("[]")
+  notes        String?
+  updatedAt    DateTime  @updatedAt
+
+  @@map("animal_cards")
+}
+
+model Video {
+  id           String   @id @default(uuid())
+  videoUrl     String
+  thumbnailUrl String?
+  description  String
+  likesCount   Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  animalId     String
+  animal       Animal @relation(fields: [animalId], references: [id])
+  uploadedById String
+  uploadedBy   User   @relation(fields: [uploadedById], references: [id])
+  likes        Like[]
+
+  @@map("videos")
+}
+
+model Like {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  videoId   String
+  video     Video    @relation(fields: [videoId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([userId, videoId])
+  @@map("likes")
+}
+
+model Follow {
+  id        String   @id @default(uuid())
+  humanId   String
+  human     User     @relation(fields: [humanId], references: [id])
+  shelterId String
+  createdAt DateTime @default(now())
+
+  @@unique([humanId, shelterId])
+  @@map("follows")
+}
+
+model Chat {
+  id        String         @id @default(uuid())
+  humanId   String
+  human     User           @relation("HumanChats", fields: [humanId], references: [id])
+  shelterId String
+  shelter   ShelterProfile @relation("ShelterChats", fields: [shelterId], references: [id])
+  createdAt DateTime       @default(now())
+
+  messages         Message[]
+  adoptionRequests AdoptionRequest[]
+
+  @@unique([humanId, shelterId])
+  @@map("chats")
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  chatId    String
+  chat      Chat     @relation(fields: [chatId], references: [id])
+  senderId  String
+  sender    User     @relation(fields: [senderId], references: [id])
+  content   String?
+  mediaUrl  String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("messages")
+}
+
+model AdoptionRequest {
+  id        String   @id @default(uuid())
+  animalId  String
+  animal    Animal   @relation(fields: [animalId], references: [id])
+  humanId   String
+  human     User     @relation(fields: [humanId], references: [id])
+  shelterId String
+  chatId    String?
+  chat      Chat?    @relation(fields: [chatId], references: [id])
+  status    String   @default("PENDING")
+  createdAt DateTime @default(now())
+
+  @@map("adoption_requests")
+}
+
+model Donation {
+  id           String   @id @default(uuid())
+  humanId      String
+  human        User     @relation(fields: [humanId], references: [id])
+  shelterId    String
+  amount       Float
+  currency     String   @default("PEN")
+  developerCut Float
+  shelterCut   Float
+  status       String   @default("PENDING")
+  createdAt    DateTime @default(now())
+
+  @@map("donations")
+}
+
+model GalletaTransaction {
+  id        String   @id @default(uuid())
+  humanId   String
+  human     User     @relation(fields: [humanId], references: [id])
+  amount    Int
+  type      String
+  createdAt DateTime @default(now())
+
+  @@map("galleta_transactions")
+}
+
+model AnimalFeed {
+  id           String   @id @default(uuid())
+  humanId      String
+  human        User     @relation(fields: [humanId], references: [id])
+  animalId     String
+  animal       Animal   @relation(fields: [animalId], references: [id])
+  amount       Int
+  shelterCut   Float
+  developerCut Float
+  createdAt    DateTime @default(now())
+
+  @@map("animal_feeds")
+}
+
+model Badge {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  iconUrl     String?
+  tier        String
+  isPublic    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  userBadges UserBadge[]
+
+  @@map("badges")
+}
+
+model UserBadge {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  badgeId    String
+  badge      Badge    @relation(fields: [badgeId], references: [id])
+  assignedBy String?
+  assignedAt DateTime @default(now())
+
+  @@unique([userId, badgeId])
+  @@map("user_badges")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String
+  title     String
+  body      String
+  data      Json?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("notifications")
+}
+
+model WeeklyRanking {
+  id              String   @id @default(uuid())
+  userId          String
+  weekStart       DateTime
+  totalDonated    Float    @default(0)
+  totalGalletas   Int      @default(0)
+  sheltersHelped  Int      @default(0)
+  animalsAdopted  Int      @default(0)
+  rank            Int
+
+  @@unique([userId, weekStart])
+  @@map("weekly_rankings")
+}
