@@ -27,6 +27,8 @@ import com.huellalive.app.ui.theme.*
 import org.koin.compose.koinInject
 import com.huellalive.app.ui.human.HumanProfileScreen
 import com.huellalive.app.ui.shelter.ShelterProfileScreen
+import com.huellalive.app.ui.explore.ExploreScreen
+import com.huellalive.app.ui.search.SearchScreen
 
 class FeedScreen : Screen {
     @Composable
@@ -91,8 +93,6 @@ class FeedScreen : Screen {
                 isLoggedIn = isLoggedIn,
                 userRole = userRole,
                 onFeedClick = {},
-                onExploreClick = {},
-                onSearchClick = {},
                 onProfileClick = {
                     when (userRole) {
                         "HUMAN"   -> navigator.push(HumanProfileScreen())

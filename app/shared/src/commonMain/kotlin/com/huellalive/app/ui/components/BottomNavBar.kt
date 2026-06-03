@@ -15,6 +15,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
+import com.huellalive.app.ui.explore.ExploreScreen
+import com.huellalive.app.ui.search.SearchScreen
 import com.huellalive.app.ui.theme.BottomBar
 import com.huellalive.app.ui.theme.DustyRose
 import com.huellalive.app.ui.theme.TextSecondary
@@ -25,12 +29,12 @@ fun BottomNavBar(
     isLoggedIn: Boolean,
     userRole: String?,
     onFeedClick: () -> Unit,
-    onExploreClick: () -> Unit,
-    onSearchClick: () -> Unit,
     onProfileClick: () -> Unit,
     onLoginClick: () -> Unit,
     onUploadClick: () -> Unit
 ) {
+    val navigator = LocalNavigator.currentOrThrow
+
     NavigationBar(
         modifier = modifier,
         containerColor = BottomBar.copy(alpha = 0.94f),
@@ -45,14 +49,14 @@ fun BottomNavBar(
         )
         NavigationBarItem(
             selected = false,
-            onClick = onExploreClick,
+            onClick = { navigator.push(ExploreScreen()) },
             icon = { Icon(Icons.Default.Explore, contentDescription = "Explorar") },
             label = { Text("Explorar") },
             colors = bottomNavColors()
         )
         NavigationBarItem(
             selected = false,
-            onClick = onSearchClick,
+            onClick = { navigator.push(SearchScreen()) },
             icon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
             label = { Text("Buscar") },
             colors = bottomNavColors()

@@ -1,6 +1,8 @@
 package com.huellalive.app.data.remote
 
 import com.huellalive.app.data.model.*
+import com.huellalive.app.model.AnimalSearchFilters
+import com.huellalive.app.model.AnimalSearchResult
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
@@ -43,6 +45,16 @@ class ApiService(private val client: HttpClient) {
     suspend fun getAnimalCredentials(id: String): AnimalCredentialsDto =
         client.get("animals/$id/credentials").body()
 
+    suspend fun searchAnimals(filters: AnimalSearchFilters): AnimalSearchResult =
+        client.get("animals/search") {
+            filters.name?.let { parameter("name", it) }
+            filters.species?.let { parameter("species", it) }
+            filters.city?.let { parameter("city", it) }
+            filters.status?.let { parameter("status", it) }
+            parameter("page", filters.page)
+            parameter("limit", filters.limit)
+        }.body()
+
     // SHELTERS
     suspend fun getShelterById(id: String): ShelterProfileDto =
         client.get("shelters/$id").body()
@@ -68,4 +80,19 @@ class ApiService(private val client: HttpClient) {
 
     suspend fun updateAnimalCard(id: String, data: Map<String, Any>): AnimalCardDto =
         client.put("animals/$id/card") { setBody(data) }.body()
+
+    suspend fun search(
+        query: String = "",
+        species: String? = null,
+        city: String? = null,
+        status: String? = null
+    ): SearchResultDto = client.get("search") {
+        parameter("q", query)
+        if (species != null) parameter("species", species)
+        if (city != null) parameter("city", city)
+        if (status != null) parameter("status", status)
+    }.body()
+
+    suspend fun getWeeklyRanking(): List<RankingItemDto> =
+        client.get("search/ranking").body()
 }

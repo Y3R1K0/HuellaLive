@@ -33,6 +33,11 @@ import com.huellalive.app.ui.feed.FeedScreen
 import com.huellalive.app.ui.theme.*
 import org.koin.compose.koinInject
 import androidx.compose.ui.zIndex
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.items
+import com.huellalive.app.ui.animal.AnimalDetailScreenData
+
 
 class ShelterProfileScreen : Screen {
     @Composable
@@ -140,12 +145,33 @@ class ShelterProfileScreen : Screen {
                 Spacer(Modifier.height(12.dp))
             }
 
-            if (state.isLoading) {
-                item { Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = DustyRose) } }
-            } else if (state.animals.isEmpty()) {
-                item { Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) { Text("No tienes animales registrados", color = TextSecondary) } }
-            } else {
-                items(state.animals) { animal -> AnimalListItem(animal = animal, onClick = {}) }
+            item {
+                if (state.isLoading) {
+                    Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = DustyRose)
+                    }
+                } else if (state.animals.isEmpty()) {
+                    Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                        Text("No tienes animales registrados", color = TextSecondary)
+                    }
+                } else {
+                    androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
+                        columns = GridCells.Fixed(2),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 2000.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        userScrollEnabled = false
+                    ) {
+                        items(state.animals) { animal ->
+                            AnimalGridCard(animal = animal, onClick = {
+                                navigator.push(AnimalDetailScreenData(animal.id))
+                            })
+                        }
+                    }
+                }
             }
 
             item { Spacer(Modifier.height(100.dp)) }
@@ -186,4 +212,88 @@ fun AnimalListItem(animal: AnimalDto, onClick: () -> Unit) {
         Icon(Icons.Default.ChevronRight, null, tint = TextTertiary)
     }
 
+}
+
+@Composable
+fun AnimalGridCard(animal: AnimalDto, onClick: () -> Unit) {
+    val (statusColor, statusLabel) = when (animal.status) {
+        "AVAILABLE"  -> StatusAvailable to "Disponible"
+        "RECOVERING" -> StatusRecovering to "En recuperación"
+        "PREGNANT"   -> StatusPregnant to "Preñada"
+        "ADOPTED"    -> StatusAdopted to "Adoptado"
+        else         -> StatusOther to "Otro"
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(0.8f)
+            .clip(RoundedCornerShape(16.dp))
+            .background(Surface)
+            .clickable(onClick = onClick)
+    ) {
+        // Foto grande
+        if (animal.photoUrl != null) {
+            AsyncImage(
+                model = animal.photoUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        } else {
+            Box(
+                Modifier.fillMaxSize().background(SurfaceRaised),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    if (animal.species == "Perro") "🐶"
+                    else if (animal.species == "Gato") "🐱" else "🐾",
+                    fontSize = 40.sp
+                )
+            }
+        }
+
+        // Gradiente bottom
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(100.dp)
+                .align(Alignment.BottomCenter)
+                .background(
+                    androidx.compose.ui.graphics.Brush.verticalGradient(
+                        colors = listOf(
+                            androidx.compose.ui.graphics.Color.Transparent,
+                            androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.8f)
+                        )
+                    )
+                )
+        )
+
+        // Info bottom
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(10.dp)
+        ) {
+            Text(animal.name, style = MaterialTheme.typography.titleSmall, color = White, fontWeight = FontWeight.Bold)
+            Text(animal.species, style = MaterialTheme.typography.bodySmall, color = White.copy(alpha = 0.8f))
+        }
+
+        // Status badge top right
+        Surface(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(8.dp),
+            color = statusColor,
+            shape = RoundedCornerShape(6.dp)
+        ) {
+            Text(
+                statusLabel,
+                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                style = MaterialTheme.typography.labelSmall,
+                color = TextOnAccent,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
 }

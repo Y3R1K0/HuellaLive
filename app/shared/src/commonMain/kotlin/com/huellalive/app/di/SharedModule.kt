@@ -10,6 +10,7 @@ import com.huellalive.app.data.repository.ShelterRepository
 import com.huellalive.app.data.repository.UserRepository
 import com.russhwolf.settings.Settings
 import org.koin.dsl.module
+import com.huellalive.app.data.repository.SearchRepository
 
 
 val sharedModule = module {
@@ -22,4 +23,5 @@ val sharedModule = module {
     single<ShelterRepository> { ShelterRepository(get()) }
     single<UserRepository> { UserRepository(get()) }
     single<FeedRepository> { FeedRepository(get()) }
+    single<SearchRepository> { SearchRepository(get()) }
 }
