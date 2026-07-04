@@ -2,6 +2,7 @@ package com.huellalive.app.ui.auth
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
+import com.huellalive.app.data.model.FirebaseProfilePreviewDto
 import com.huellalive.app.data.repository.AuthRepository
 import com.huellalive.app.utils.Resource
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,7 +14,8 @@ data class AuthUiState(
     val isLoading: Boolean = false,
     val isSuccess: Boolean = false,
     val errorMessage: String? = null,
-    val successMessage: String? = null
+    val successMessage: String? = null,
+    val firebaseProfile: FirebaseProfilePreviewDto? = null
 )
 
 class AuthViewModel(
@@ -41,6 +43,52 @@ class AuthViewModel(
                 is Resource.Success -> AuthUiState(isSuccess = true)
                 is Resource.Error   -> AuthUiState(errorMessage = r.message)
                 else                -> AuthUiState()
+            }
+        }
+    }
+
+    fun loginHumanWithFirebase(idToken: String) {
+        screenModelScope.launch {
+            _state.value = AuthUiState(isLoading = true)
+            _state.value = when (val r = authRepository.loginHumanWithFirebase(idToken)) {
+                is Resource.Success -> AuthUiState(isSuccess = true)
+                is Resource.Error -> AuthUiState(errorMessage = r.message)
+                else -> AuthUiState()
+            }
+        }
+    }
+
+    fun previewFirebaseProfile(idToken: String) {
+        screenModelScope.launch {
+            _state.value = AuthUiState(isLoading = true)
+            _state.value = when (val r = authRepository.previewFirebaseProfile(idToken)) {
+                is Resource.Success -> AuthUiState(
+                    successMessage = "Gmail verificado con Google",
+                    firebaseProfile = r.data
+                )
+                is Resource.Error -> AuthUiState(errorMessage = r.message)
+                else -> AuthUiState()
+            }
+        }
+    }
+
+    fun beginExternalLogin() {
+        _state.value = AuthUiState(isLoading = true)
+    }
+
+    fun showError(message: String) {
+        _state.value = AuthUiState(errorMessage = message)
+    }
+
+    fun resetPassword(email: String) {
+        screenModelScope.launch {
+            _state.value = AuthUiState(isLoading = true)
+            _state.value = when (val result = authRepository.sendPasswordResetEmail(email)) {
+                is Resource.Success -> AuthUiState(
+                    successMessage = "Te enviamos un enlace para cambiar tu contrasena"
+                )
+                is Resource.Error -> AuthUiState(errorMessage = result.message)
+                else -> AuthUiState()
             }
         }
     }
