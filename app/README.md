@@ -1,31 +1,58 @@
-This is a Kotlin Multiplatform project targeting Android, iOS.
+# HuellaLive App
 
-* [/iosApp](./iosApp/iosApp) contains an iOS application. Even if you’re sharing your UI with Compose Multiplatform,
-  you need this entry point for your iOS app. This is also where you should add SwiftUI code for your project.
+Aplicacion movil de HuellaLive construida con Kotlin Multiplatform y Compose Multiplatform.
 
-* [/shared](./shared/src) is for code that will be shared across your Compose Multiplatform applications.
-  It contains several subfolders:
-  - [commonMain](./shared/src/commonMain/kotlin) is for code that’s common for all targets.
-  - Other folders are for Kotlin code that will be compiled for only the platform indicated in the folder name.
-    For example, if you want to use Apple’s CoreCrypto for the iOS part of your Kotlin app,
-    the [iosMain](./shared/src/iosMain/kotlin) folder would be the right place for such calls.
-    Similarly, if you want to edit the Desktop (JVM) specific part, the [jvmMain](./shared/src/jvmMain/kotlin)
-    folder is the appropriate location.
+## Estructura
 
-### Running the apps
+```text
+app/
++-- androidApp/      App Android
++-- iosApp/          Entrada iOS preparada
++-- shared/          Codigo compartido
+|   +-- commonMain/  UI, modelos, repositorios y navegacion
+|   +-- androidMain/ Implementaciones Android
+|   +-- iosMain/     Implementaciones iOS preparadas
++-- gradle/          Configuracion Gradle
+```
 
-Use the run configurations provided by the run widget in your IDE's toolbar. You can also use these commands and options:
+## Funcionalidades
 
-- Android app: `./gradlew :androidApp:assembleDebug`
-- iOS app: open the [/iosApp](./iosApp) directory in Xcode and run it from there.
+- Feed de videos de animales e historias de albergue.
+- Busqueda por especie, ciudad y estado.
+- Explorar con mapa.
+- Perfiles de animal, humano y albergue.
+- Solicitudes de adopcion.
+- Chats y envio de imagenes.
+- Subida de fotos/videos.
+- Login por correo y Google.
+- Donaciones a albergues mediante Mercado Pago.
 
-### Running tests
+## Ejecutar en Android Studio
 
-Use the run button in your IDE's editor gutter, or run tests using Gradle tasks:
+1. Abrir `C:\back\s\HuellaLive\app` en Android Studio.
+2. Esperar sincronizacion de Gradle.
+3. Seleccionar `androidApp`.
+4. Ejecutar en emulador o celular.
 
-- Android tests: `./gradlew :shared:testAndroidHostTest`
-- iOS tests: `./gradlew :shared:iosSimulatorArm64Test`
+## Compilar APK debug
 
----
+```powershell
+cd C:\back\s\HuellaLive\app
+.\gradlew.bat :androidApp:assembleDebug
+```
 
-Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)…
+Salida:
+
+```text
+C:\back\s\HuellaLive\app\androidApp\build\outputs\apk\debug\androidApp-debug.apk
+```
+
+## Copiar APK a entregables
+
+```powershell
+Copy-Item "C:\back\s\HuellaLive\app\androidApp\build\outputs\apk\debug\androidApp-debug.apk" "C:\back\s\HuellaLive\entregables\HuellaLive-debug.apk" -Force
+```
+
+## iOS
+
+El proyecto tiene entrada iOS preparada en `iosApp`, pero el desarrollo y pruebas actuales estan enfocados en Android. Para compilar iOS se requiere macOS y Xcode.
