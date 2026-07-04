@@ -6,11 +6,6 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 export class AnimalsController {
   constructor(private readonly animalsService: AnimalsService) {}
 
-  @Get(':id')
-  getAnimal(@Param('id') id: string) {
-    return this.animalsService.getAnimalById(id);
-  }
-
   @UseGuards(JwtAuthGuard)
   @Get('shelter/mine')
   getMyAnimals(@Request() req: any) {
@@ -36,6 +31,12 @@ export class AnimalsController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Patch(':id')
+  updateAnimal(@Request() req: any, @Param('id') id: string, @Body() dto: any) {
+    return this.animalsService.updateAnimal(req.user.id, id, dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get(':id/credentials')
   getCredentials(@Request() req: any, @Param('id') id: string) {
     return this.animalsService.getAnimalCredentials(req.user.id, id);
@@ -52,4 +53,9 @@ export class AnimalsController {
    getShelterAdopted(@Request() req: any) {
      return this.animalsService.getShelterAdoptedAnimals(req.user.id);
    }
+
+  @Get(':id')
+  getAnimal(@Param('id') id: string) {
+    return this.animalsService.getAnimalById(id);
+  }
 }

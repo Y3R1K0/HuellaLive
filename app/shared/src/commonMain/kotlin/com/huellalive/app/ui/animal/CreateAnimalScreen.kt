@@ -29,7 +29,8 @@ class CreateAnimalScreen : Screen {
         val state by viewModel.uiState.collectAsState()
 
         var name by remember { mutableStateOf("") }
-        var species by remember { mutableStateOf("Perro") }
+        var species by remember { mutableStateOf("") }
+        var requestedSpeciesName by remember { mutableStateOf("") }
         var breed by remember { mutableStateOf("") }
         var age by remember { mutableStateOf("") }
         var description by remember { mutableStateOf("") }
@@ -38,7 +39,6 @@ class CreateAnimalScreen : Screen {
         var speciesExpanded by remember { mutableStateOf(false) }
         var statusExpanded by remember { mutableStateOf(false) }
 
-        val speciesOptions = listOf("Perro", "Gato", "Conejo", "Ave", "Otro")
         val statusOptions = listOf(
             "AVAILABLE" to "Disponible",
             "RECOVERING" to "En recuperación",
@@ -48,6 +48,12 @@ class CreateAnimalScreen : Screen {
 
         LaunchedEffect(state.isSuccess) {
             if (state.isSuccess) navigator.pop()
+        }
+        LaunchedEffect(state.species) {
+            if (species.isBlank() && state.species.isNotEmpty()) {
+                species = state.species.firstOrNull { it.name == "Perro" }?.name
+                    ?: state.species.first().name
+            }
         }
 
         val fieldColors = OutlinedTextFieldDefaults.colors(
@@ -82,10 +88,36 @@ class CreateAnimalScreen : Screen {
                         shape = MaterialTheme.shapes.medium, colors = fieldColors
                     )
                     ExposedDropdownMenu(expanded = speciesExpanded, onDismissRequest = { speciesExpanded = false }) {
-                        speciesOptions.forEach {
-                            DropdownMenuItem(text = { Text(it, color = TextPrimary) }, onClick = { species = it; speciesExpanded = false })
+                        state.species.forEach {
+                            DropdownMenuItem(
+                                text = { Text(it.name, color = TextPrimary) },
+                                onClick = {
+                                    species = it.name
+                                    requestedSpeciesName = ""
+                                    speciesExpanded = false
+                                }
+                            )
                         }
+                        DropdownMenuItem(
+                            text = { Text("Otro", color = TextPrimary) },
+                            onClick = {
+                                species = "Otro"
+                                speciesExpanded = false
+                            }
+                        )
                     }
+                }
+
+                if (species == "Otro") {
+                    OutlinedTextField(
+                        value = requestedSpeciesName,
+                        onValueChange = { requestedSpeciesName = it },
+                        label = { Text("Nombre de la nueva especie *") },
+                        supportingText = { Text("Se enviara al administrador para su aprobacion") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.medium,
+                        colors = fieldColors
+                    )
                 }
 
                 OutlinedTextField(value = breed, onValueChange = { breed = it }, label = { Text("Raza (opcional)") }, modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium, colors = fieldColors)
@@ -120,6 +152,7 @@ class CreateAnimalScreen : Screen {
                         viewModel.createAnimal(
                             name = name,
                             species = species,
+                            requestedSpeciesName = requestedSpeciesName.ifBlank { null },
                             breed = breed.ifBlank { null },
                             age = age.toIntOrNull(),
                             description = description.ifBlank { null },
@@ -127,7 +160,11 @@ class CreateAnimalScreen : Screen {
                             birthDate = birthDate.ifBlank { null }
                         )
                     },
-                    enabled = !state.isLoading && name.isNotBlank(),
+                    enabled = !state.isLoading &&
+                        !state.isLoadingSpecies &&
+                        name.isNotBlank() &&
+                        species.isNotBlank() &&
+                        (species != "Otro" || requestedSpeciesName.isNotBlank()),
                     modifier = Modifier.fillMaxWidth().height(52.dp),
                     shape = MaterialTheme.shapes.medium,
                     colors = ButtonDefaults.buttonColors(containerColor = DustyRose)
