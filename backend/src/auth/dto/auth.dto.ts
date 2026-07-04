@@ -3,6 +3,10 @@ export class LoginDto {
   password: string;
 }
 
+export class FirebaseLoginDto {
+  idToken: string;
+}
+
 export class RegisterHumanDto {
   name: string;
   email: string;

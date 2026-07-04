@@ -17,4 +17,10 @@ export class UsersController {
   updateMe(@Request() req: any, @Body() dto: any) {
     return this.usersService.updateMe(req.user.id, dto);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('me/badge')
+  selectBadge(@Request() req: any, @Body() dto: any) {
+    return this.usersService.selectBadge(req.user.id, dto.badgeId ?? null);
+  }
 }
