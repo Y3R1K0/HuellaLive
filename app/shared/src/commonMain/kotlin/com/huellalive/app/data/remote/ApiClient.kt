@@ -11,6 +11,7 @@ import kotlinx.serialization.json.Json
 
 fun createHttpClient(sessionManager: SessionManager): HttpClient {
     return HttpClient {
+        expectSuccess = true
         install(ContentNegotiation) {
             json(Json {
                 ignoreUnknownKeys = true
@@ -18,10 +19,10 @@ fun createHttpClient(sessionManager: SessionManager): HttpClient {
             })
         }
         install(Logging) {
-            level = LogLevel.BODY
+            level = LogLevel.INFO
         }
         install(DefaultRequest) {
-            url("http://10.0.2.2:3000/")
+            url("https://api.huellalive.lat/")
             contentType(ContentType.Application.Json)
             val token = sessionManager.getAccessToken()
             if (token != null) {
