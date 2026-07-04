@@ -32,7 +32,9 @@ model User {
   email        String   @unique
   passwordHash String?
   googleId     String?  @unique
+  firebaseUid  String?  @unique
   avatarUrl    String?
+  selectedBadgeId String?
   role         Role     @default(HUMAN)
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
@@ -40,7 +42,9 @@ model User {
 
   shelterProfile      ShelterProfile?
   videos              Video[]
+  shelterStories      ShelterStory[]
   likes               Like[]
+  videoViews          VideoView[]
   follows             Follow[]
   chatsAsHuman        Chat[]            @relation("HumanChats")
   messages            Message[]
@@ -51,6 +55,7 @@ model User {
   badges              UserBadge[]
   notifications       Notification[]
   adoptedAnimals      Animal[]          @relation("AdoptedAnimals")
+  reports             Report[]
 
   @@map("users")
 }
@@ -62,13 +67,24 @@ model ShelterProfile {
   coverUrl         String?
   description      String?
   location         String?
+  latitude         Float?
+  longitude        Float?
   phone            String?
+  mercadoPagoAccessToken String?
+  mercadoPagoPublicKey   String?
+  mercadoPagoUserId      String?
+  mercadoPagoRefreshToken String?
+  mercadoPagoConnectedAt DateTime?
+  mercadoPagoTokenExpiresAt DateTime?
   status           ShelterStatus @default(PENDING)
   verificationDocs String[]
   createdAt        DateTime      @default(now())
 
   animals          Animal[]
   chats            Chat[]        @relation("ShelterChats")
+  donations        Donation[]
+  withdrawals      ShelterWithdrawal[]
+  stories          ShelterStory[]
 
   @@map("shelter_profiles")
 }
@@ -128,8 +144,59 @@ model Video {
   uploadedById String
   uploadedBy   User   @relation(fields: [uploadedById], references: [id])
   likes        Like[]
+  views        VideoView[]
+  reports      Report[]
 
   @@map("videos")
+}
+
+model ShelterStory {
+  id           String   @id @default(uuid())
+  videoUrl     String
+  thumbnailUrl String?
+  description  String
+  createdAt    DateTime @default(now())
+
+  shelterId    String
+  shelter      ShelterProfile @relation(fields: [shelterId], references: [id])
+  uploadedById String
+  uploadedBy   User   @relation(fields: [uploadedById], references: [id])
+
+  @@index([shelterId, createdAt])
+  @@map("shelter_stories")
+}
+
+model Report {
+  id          String   @id @default(uuid())
+  reporterId  String
+  reporter    User     @relation(fields: [reporterId], references: [id])
+  targetType  String
+  targetId    String
+  reason      String
+  details     String?
+  status      String   @default("PENDING")
+  videoId     String?
+  video       Video?   @relation(fields: [videoId], references: [id])
+  createdAt   DateTime @default(now())
+  reviewedAt  DateTime?
+  reviewedBy  String?
+
+  @@index([targetType, targetId])
+  @@index([status, createdAt])
+  @@map("reports")
+}
+
+model VideoView {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  videoId   String
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, videoId])
+  @@index([userId, createdAt])
+  @@map("video_views")
 }
 
 model Like {
@@ -204,10 +271,14 @@ model Donation {
   humanId      String
   human        User     @relation(fields: [humanId], references: [id])
   shelterId    String
+  shelter      ShelterProfile @relation(fields: [shelterId], references: [id])
   amount       Float
-  currency     String   @default("PEN")
+  currency     String   @default("HUELLITAS")
   developerCut Float
   shelterCut   Float
+  marketplaceFee Float?
+  mercadopagoPreferenceId String?
+  mercadopagoPaymentId String?
   status       String   @default("PENDING")
   createdAt    DateTime @default(now())
 
@@ -241,10 +312,13 @@ model AnimalFeed {
 
 model Badge {
   id          String   @id @default(uuid())
+  key         String   @unique
   name        String
   description String?
   iconUrl     String?
   tier        String
+  activity    String
+  threshold   Int
   isPublic    Boolean  @default(false)
   createdAt   DateTime @default(now())
 
@@ -292,4 +366,82 @@ model WeeklyRanking {
 
   @@unique([userId, weekStart])
   @@map("weekly_rankings")
+}
+
+model ShelterWithdrawal {
+  id              String   @id @default(uuid())
+  shelterId       String
+  shelter         ShelterProfile @relation(fields: [shelterId], references: [id])
+  amount          Float
+  status          String   @default("PENDING")
+  accountHolder   String
+  documentNumber  String
+  bankName        String
+  accountType     String
+  accountNumber   String
+  cci             String
+  currency        String   @default("PEN")
+  receiptUrl      String?
+  rejectionReason String?
+  createdAt       DateTime @default(now())
+  processedAt     DateTime?
+
+  @@index([shelterId, status])
+  @@map("shelter_withdrawals")
+}
+
+model SearchCity {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  region    String?
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("search_cities")
+}
+
+model SearchSpecies {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("search_species")
+}
+
+model SpeciesRequest {
+  id            String   @id @default(uuid())
+  requestedName String
+  normalizedName String
+  animalId      String   @unique
+  shelterId     String
+  requestedById String
+  status        String   @default("PENDING")
+  rejectionReason String?
+  reviewedById  String?
+  reviewedAt    DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@map("species_requests")
+}
+
+model GeocodingCache {
+  id        String   @id @default(uuid())
+  cacheKey  String   @unique
+  kind      String
+  payload   Json
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([expiresAt])
+  @@map("geocoding_cache")
 }
