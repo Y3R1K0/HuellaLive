@@ -1,6 +1,8 @@
 package com.huellalive.app.ui.theme
 
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialExpressiveTheme
+import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 
@@ -9,11 +11,11 @@ private val HuellaColorScheme = darkColorScheme(
     onPrimary            = TextOnAccent,
     primaryContainer     = DustyRoseDark,
     onPrimaryContainer   = TextPrimary,
-    secondary            = LavenderSoft,
+    secondary            = MintCream,
     onSecondary          = TextOnAccent,
-    secondaryContainer   = SurfaceRaised,
+    secondaryContainer   = StatusAvailableBg,
     onSecondaryContainer = TextPrimary,
-    tertiary             = MintCream,
+    tertiary             = PeachWarm,
     onTertiary           = TextOnAccent,
     background           = Background,
     onBackground         = TextPrimary,
@@ -29,11 +31,14 @@ private val HuellaColorScheme = darkColorScheme(
     inverseOnSurface     = Background
 )
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun HuellaLiveTheme(content: @Composable () -> Unit) {
-    MaterialTheme(
+    MaterialExpressiveTheme(
         colorScheme = HuellaColorScheme,
-        typography  = Typography,
-        content     = content
+        motionScheme = MotionScheme.expressive(),
+        typography = Typography,
+        shapes = HuellaShapes,
+        content = content
     )
 }
