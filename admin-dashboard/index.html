@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HuellaLive Admin</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main id="app">
+      <section id="loginView" class="login-shell">
+        <div class="brand-card">
+          <div class="brand-mark">HL</div>
+          <p class="eyebrow">Panel administrativo</p>
+          <h1>HuellaLive</h1>
+          <p class="muted">Gestiona albergues, especies, ciudades y reportes desde un solo lugar.</p>
+        </div>
+
+        <form id="loginForm" class="panel login-panel">
+          <label>
+            API
+            <input id="apiBaseInput" type="url" autocomplete="url" />
+          </label>
+          <label>
+            Correo admin
+            <input id="emailInput" type="email" autocomplete="username" required />
+          </label>
+          <label>
+            Contrasena
+            <input id="passwordInput" type="password" autocomplete="current-password" required />
+          </label>
+          <button type="submit" class="primary-btn">Entrar</button>
+          <p id="loginMessage" class="message"></p>
+        </form>
+      </section>
+
+      <section id="dashboardView" class="dashboard hidden">
+        <aside class="sidebar">
+          <div>
+            <div class="brand-row">
+              <div class="brand-mark small">HL</div>
+              <div>
+                <strong>HuellaLive</strong>
+                <span>Admin</span>
+              </div>
+            </div>
+            <nav class="nav">
+              <button data-tab="overview" class="active">Resumen</button>
+              <button data-tab="shelters">Albergues</button>
+              <button data-tab="cities">Ciudades</button>
+              <button data-tab="species">Especies</button>
+              <button data-tab="speciesRequests">Solicitudes</button>
+              <button data-tab="reports">Reportes</button>
+            </nav>
+          </div>
+          <button id="logoutBtn" class="ghost-btn">Cerrar sesion</button>
+        </aside>
+
+        <section class="content">
+          <header class="topbar">
+            <div>
+              <p class="eyebrow">Dashboard</p>
+              <h2 id="pageTitle">Resumen</h2>
+            </div>
+            <button id="refreshBtn" class="secondary-btn">Actualizar</button>
+          </header>
+
+          <div id="toast" class="toast hidden"></div>
+
+          <section id="overview" class="tab-page"></section>
+          <section id="shelters" class="tab-page hidden"></section>
+          <section id="cities" class="tab-page hidden"></section>
+          <section id="species" class="tab-page hidden"></section>
+          <section id="speciesRequests" class="tab-page hidden"></section>
+          <section id="reports" class="tab-page hidden"></section>
+        </section>
+      </section>
+    </main>
+    <script src="./app.js"></script>
+  </body>
+</html>
+
