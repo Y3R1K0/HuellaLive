@@ -8,4 +8,6 @@ import com.huellalive.app.utils.safeApiCall
 class UserRepository(private val api: ApiService) {
     suspend fun getMe(): Resource<UserProfileDto> = safeApiCall { api.getMe() }
     suspend fun updateMe(data: Map<String, String>): Resource<UserProfileDto> = safeApiCall { api.updateMe(data) }
+    suspend fun selectProfileBadge(badgeId: String?): Resource<UserProfileDto> =
+        safeApiCall { api.selectProfileBadge(badgeId) }
 }

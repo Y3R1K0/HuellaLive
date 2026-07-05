@@ -3,7 +3,8 @@ import {
   UnauthorizedException,
   ConflictException,
   NotFoundException,
-  ForbiddenException
+  ForbiddenException,
+  BadRequestException
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -15,37 +16,43 @@ import {
   LinkAnimalDto
 } from './dto/auth.dto';
 import * as bcrypt from 'bcryptjs';
+import { FirebaseIdentityService } from './firebase-identity.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
-    private config: ConfigService
+    private config: ConfigService,
+    private firebaseIdentity: FirebaseIdentityService
   ) {}
 
   async registerHuman(dto: RegisterHumanDto) {
+    const email = this.normalizeEmail(dto.email);
     const existing = await this.prisma.user.findUnique({
-      where: { email: dto.email }
+      where: { email }
     });
     if (existing) throw new ConflictException('El email ya está registrado');
     const passwordHash = await bcrypt.hash(dto.password, 12);
-    const user = await this.prisma.user.create({
-      data: { name: dto.name, email: dto.email, passwordHash, role: 'HUMAN' }
+    let user = await this.prisma.user.create({
+      data: { name: dto.name, email, passwordHash, role: 'HUMAN' }
     });
+    user = await this.syncFirebasePassword(user, dto.password);
     return this.generateTokens(user);
   }
 
   async registerShelter(dto: RegisterShelterDto) {
+    const email = this.normalizeEmail(dto.email);
+    await this.ensureValidUniqueShelterGmail(email);
     const existing = await this.prisma.user.findUnique({
-      where: { email: dto.email }
+      where: { email }
     });
     if (existing) throw new ConflictException('El email ya está registrado');
     const passwordHash = await bcrypt.hash(dto.password, 12);
-    const user = await this.prisma.user.create({
+    let user = await this.prisma.user.create({
       data: {
         name: dto.name,
-        email: dto.email,
+        email,
         passwordHash,
         role: 'SHELTER',
         shelterProfile: {
@@ -60,22 +67,90 @@ export class AuthService {
       },
       include: { shelterProfile: true }
     });
+    user = await this.syncFirebasePassword(user, dto.password);
     return this.generateTokens(user);
   }
 
   async login(dto: LoginDto) {
-    const user = await this.prisma.user.findUnique({
-      where: { email: dto.email },
+    const email = this.normalizeEmail(dto.email);
+    const password = dto.password.trim();
+    let user = await this.prisma.user.findUnique({
+      where: { email },
       include: { shelterProfile: true }
     });
     if (!user || !user.passwordHash)
       throw new UnauthorizedException('Email o contraseña incorrectos');
     if (!user.isActive)
       throw new ForbiddenException('Cuenta suspendida');
-    const isValid = await bcrypt.compare(dto.password, user.passwordHash);
+    const isValid = await bcrypt.compare(password, user.passwordHash);
     if (!isValid)
       throw new UnauthorizedException('Email o contraseña incorrectos');
+    user = await this.syncFirebasePassword(user, password);
     return this.generateTokens(user);
+  }
+
+  async loginWithFirebase(idToken: string) {
+    const identity = await this.firebaseIdentity.verifyIdToken(idToken);
+    const email = identity.email?.trim().toLowerCase();
+    if (!email || identity.email_verified === false) {
+      throw new UnauthorizedException('Google no proporciono un correo verificado');
+    }
+
+    let user = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { firebaseUid: identity.uid },
+          { email },
+        ],
+      },
+      include: { shelterProfile: true },
+    });
+
+    if (!user) {
+      user = await this.prisma.user.create({
+        data: {
+          email,
+          name: identity.name?.trim() || email.substring(0, email.indexOf('@')),
+          avatarUrl: identity.picture ?? null,
+          firebaseUid: identity.uid,
+          googleId: identity.firebase?.sign_in_provider === 'google.com' ? identity.uid : null,
+          role: 'HUMAN',
+        },
+        include: { shelterProfile: true },
+      });
+    } else {
+      if (!user.isActive) throw new ForbiddenException('Cuenta suspendida');
+      if (user.role === 'SHELTER') {
+        throw new ForbiddenException('Los albergues deben ingresar con correo y contraseña');
+      }
+      user = await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          firebaseUid: identity.uid,
+          googleId: identity.firebase?.sign_in_provider === 'google.com'
+            ? identity.uid
+            : user.googleId,
+          avatarUrl: user.avatarUrl ?? identity.picture ?? null,
+        },
+        include: { shelterProfile: true },
+      });
+    }
+
+    return this.generateTokens(user);
+  }
+
+  async previewFirebaseIdentity(idToken: string) {
+    const identity = await this.firebaseIdentity.verifyIdToken(idToken);
+    const email = identity.email?.trim().toLowerCase();
+    if (!email || identity.email_verified === false) {
+      throw new UnauthorizedException('Google no proporciono un correo verificado');
+    }
+
+    return {
+      email,
+      name: identity.name?.trim() || email.substring(0, email.indexOf('@')),
+      avatarUrl: identity.picture ?? null,
+    };
   }
 
   async linkAnimal(userId: string, dto: LinkAnimalDto) {
@@ -128,5 +203,64 @@ export class AuthService {
         shelterStatus: user.shelterProfile?.status ?? null,
       }
     };
+  }
+
+  private async syncFirebasePassword(
+    user: { id: string; email: string; name: string; firebaseUid?: string | null },
+    password: string
+  ): Promise<any> {
+    const firebaseUid = await this.firebaseIdentity.syncPasswordUser(user, password);
+    if (!firebaseUid || firebaseUid === user.firebaseUid) return user;
+
+    return this.prisma.user.update({
+      where: { id: user.id },
+      data: { firebaseUid },
+      include: { shelterProfile: true },
+    });
+  }
+
+  private normalizeEmail(email: string) {
+    return email.trim().toLowerCase();
+  }
+
+  private canonicalGmail(email: string) {
+    const [localPart, domainPart] = email.split('@');
+    const domain = domainPart?.toLowerCase();
+    if (!localPart || !domain || !['gmail.com', 'googlemail.com'].includes(domain)) {
+      return null;
+    }
+
+    const local = localPart
+      .split('+')[0]
+      .replace(/\./g, '')
+      .toLowerCase();
+
+    return local ? `${local}@gmail.com` : null;
+  }
+
+  private async ensureValidUniqueShelterGmail(email: string) {
+    const canonicalEmail = this.canonicalGmail(email);
+    if (!canonicalEmail) {
+      throw new BadRequestException('Usa un correo Gmail valido para solicitar registro de albergue');
+    }
+
+    const shelterUsers = await this.prisma.user.findMany({
+      where: {
+        role: 'SHELTER',
+        OR: [
+          { email: { endsWith: '@gmail.com' } },
+          { email: { endsWith: '@googlemail.com' } },
+        ],
+      },
+      select: { email: true },
+    });
+
+    const alreadyRequested = shelterUsers.some(
+      (user) => this.canonicalGmail(user.email) === canonicalEmail,
+    );
+
+    if (alreadyRequested) {
+      throw new ConflictException('Ya existe una solicitud de albergue con este Gmail');
+    }
   }
 }

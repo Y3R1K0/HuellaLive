@@ -2,6 +2,9 @@ package com.huellalive.app.data.local
 
 import com.russhwolf.settings.Settings
 import com.russhwolf.settings.set
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 class SessionManager(private val settings: Settings) {
 
@@ -14,6 +17,9 @@ class SessionManager(private val settings: Settings) {
         private const val KEY_USER_ROLE      = "user_role"
         private const val KEY_SHELTER_STATUS = "shelter_status"
     }
+
+    private val _sessionVersion = MutableStateFlow(0)
+    val sessionVersion: StateFlow<Int> = _sessionVersion.asStateFlow()
 
     fun saveSession(
         accessToken: String,
@@ -31,6 +37,7 @@ class SessionManager(private val settings: Settings) {
         settings[KEY_USER_EMAIL]     = email
         settings[KEY_USER_ROLE]      = role
         settings[KEY_SHELTER_STATUS] = shelterStatus ?: ""
+        _sessionVersion.value += 1
     }
 
     fun getAccessToken()   = settings.getStringOrNull(KEY_ACCESS_TOKEN)
@@ -47,5 +54,8 @@ class SessionManager(private val settings: Settings) {
     fun isAdmin()     = getUserRole() == "ADMIN"
     fun isApproved()  = getShelterStatus() == "APPROVED"
 
-    fun clearSession() = settings.clear()
+    fun clearSession() {
+        settings.clear()
+        _sessionVersion.value += 1
+    }
 }

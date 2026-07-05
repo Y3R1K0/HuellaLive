@@ -10,8 +10,11 @@ class AnimalRepository(private val api: ApiService) {
     suspend fun getMyAnimals(): Resource<List<AnimalDto>> = safeApiCall { api.getMyAnimals() }
     suspend fun getAdoptedAnimals(): Resource<List<AnimalDto>> = safeApiCall { api.getAdoptedAnimals() }
     suspend fun createAnimal(request: CreateAnimalRequest): Resource<AnimalDto> = safeApiCall { api.createAnimal(request) }
+    suspend fun getSpecies(): Resource<List<SearchSpeciesDto>> = safeApiCall { api.getSearchSpecies() }
+    suspend fun updateAnimal(id: String, request: UpdateAnimalRequest): Resource<AnimalDto> = safeApiCall { api.updateAnimal(id, request) }
     suspend fun updateAnimalStatus(id: String, status: String): Resource<AnimalDto> = safeApiCall { api.updateAnimalStatus(id, status) }
     suspend fun getAnimalCredentials(id: String): Resource<AnimalCredentialsDto> = safeApiCall { api.getAnimalCredentials(id) }
     suspend fun getShelterAdoptedAnimals(): Resource<List<AnimalDto>> = safeApiCall { api.getShelterAdoptedAnimals() }
-    suspend fun updateAnimalCard(id: String, data: Map<String, Any>): Resource<AnimalCardDto> = safeApiCall { api.updateAnimalCard(id, data) }
+    suspend fun updateAnimalCard(id: String, request: UpdateAnimalCardRequest): Resource<AnimalCardDto> =
+        safeApiCall { api.updateAnimalCard(id, request) }
 }

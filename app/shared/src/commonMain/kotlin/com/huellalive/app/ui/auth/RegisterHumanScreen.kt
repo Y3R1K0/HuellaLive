@@ -20,8 +20,8 @@ import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import com.huellalive.app.auth.rememberGoogleSignInAction
 import com.huellalive.app.data.repository.AuthRepository
-import com.huellalive.app.ui.feed.FeedScreen
 import com.huellalive.app.ui.theme.*
 import org.koin.compose.koinInject
 
@@ -39,13 +39,17 @@ class RegisterHumanScreen : Screen {
         var password by remember { mutableStateOf("") }
         var confirmPassword by remember { mutableStateOf("") }
         var passwordVisible by remember { mutableStateOf(false) }
+        val googleSignIn = rememberGoogleSignInAction(
+            onIdToken = viewModel::loginHumanWithFirebase,
+            onError = viewModel::showError
+        )
 
         val passwordsMatch = confirmPassword.isEmpty() || password == confirmPassword
         val isEmailValid = email.isEmpty() || email.contains("@")
         val isFormValid = name.isNotBlank() && email.isNotBlank() && isEmailValid && password.length >= 6 && password == confirmPassword
 
         LaunchedEffect(state.isSuccess) {
-            if (state.isSuccess) navigator.replaceAll(FeedScreen())
+            if (state.isSuccess) navigator.popUntilRoot()
         }
 
         val fieldColors = OutlinedTextFieldDefaults.colors(
@@ -64,6 +68,17 @@ class RegisterHumanScreen : Screen {
                 Text("Crear cuenta", style = MaterialTheme.typography.headlineLarge, color = TextPrimary)
                 Text("Únete a HuellaLive", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
                 Spacer(Modifier.height(8.dp))
+
+                GoogleLoginButton(
+                    enabled = !state.isLoading,
+                    text = "Registrarme con Google",
+                    onClick = {
+                        viewModel.beginExternalLogin()
+                        googleSignIn.launch()
+                    }
+                )
+
+                AuthDivider()
 
                 OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Nombre completo") }, leadingIcon = { Icon(Icons.Default.Person, null, tint = TextSecondary) }, keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next), keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }), singleLine = true, modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium, colors = fieldColors)
 

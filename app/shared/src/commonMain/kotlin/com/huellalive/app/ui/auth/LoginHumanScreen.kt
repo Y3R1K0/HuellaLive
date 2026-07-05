@@ -1,7 +1,9 @@
 package com.huellalive.app.ui.auth
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -23,7 +25,7 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.huellalive.app.data.repository.AuthRepository
-import com.huellalive.app.ui.feed.FeedScreen
+import com.huellalive.app.auth.rememberGoogleSignInAction
 import com.huellalive.app.ui.theme.*
 import org.koin.compose.koinInject
 
@@ -39,10 +41,29 @@ class LoginHumanScreen : Screen {
         var email by remember { mutableStateOf("") }
         var password by remember { mutableStateOf("") }
         var passwordVisible by remember { mutableStateOf(false) }
+        var showResetDialog by remember { mutableStateOf(false) }
+        var resetEmail by remember { mutableStateOf("") }
+        val googleSignIn = rememberGoogleSignInAction(
+            onIdToken = viewModel::loginHumanWithFirebase,
+            onError = viewModel::showError
+        )
+
+        if (showResetDialog) {
+            PasswordResetDialog(
+                email = resetEmail,
+                isLoading = state.isLoading,
+                onEmailChange = { resetEmail = it },
+                onDismiss = { showResetDialog = false },
+                onSend = {
+                    showResetDialog = false
+                    viewModel.resetPassword(resetEmail)
+                }
+            )
+        }
 
         LaunchedEffect(state.isSuccess) {
             if (state.isSuccess) {
-                navigator.replaceAll(FeedScreen())
+                navigator.popUntilRoot()
             }
         }
 
@@ -55,7 +76,8 @@ class LoginHumanScreen : Screen {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 24.dp),
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 24.dp, vertical = 88.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
@@ -110,12 +132,26 @@ class LoginHumanScreen : Screen {
                     )
                 )
 
+                TextButton(
+                    onClick = {
+                        resetEmail = email
+                        showResetDialog = true
+                    },
+                    modifier = Modifier.align(Alignment.End)
+                ) {
+                    Text("Olvide mi contrasena", color = DustyRose)
+                }
+
                 if (state.errorMessage != null) {
                     Spacer(Modifier.height(8.dp))
                     Text(state.errorMessage!!, color = Error, style = MaterialTheme.typography.bodySmall)
                 }
+                state.successMessage?.let {
+                    Spacer(Modifier.height(8.dp))
+                    Text(it, color = DustyRose, style = MaterialTheme.typography.bodySmall)
+                }
 
-                Spacer(Modifier.height(28.dp))
+                Spacer(Modifier.height(16.dp))
 
                 Button(
                     onClick = { viewModel.loginHuman(email, password) },
@@ -130,6 +166,17 @@ class LoginHumanScreen : Screen {
                         Text("Iniciar sesión", style = MaterialTheme.typography.titleMedium, color = TextOnAccent)
                     }
                 }
+
+                Spacer(Modifier.height(20.dp))
+                AuthDivider()
+                Spacer(Modifier.height(20.dp))
+                GoogleLoginButton(
+                    enabled = !state.isLoading,
+                    onClick = {
+                        viewModel.beginExternalLogin()
+                        googleSignIn.launch()
+                    }
+                )
             }
 
             IconButton(

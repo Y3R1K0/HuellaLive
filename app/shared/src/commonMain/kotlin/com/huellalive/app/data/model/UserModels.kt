@@ -8,6 +8,7 @@ data class UserProfileDto(
     val name: String,
     val email: String,
     val avatarUrl: String? = null,
+    val selectedBadgeId: String? = null,
     val role: String,
     val shelterProfile: ShelterProfileDto? = null,
     val badges: List<UserBadgeDto> = emptyList(),
@@ -23,8 +24,14 @@ data class UserBadgeDto(
 @Serializable
 data class BadgeDto(
     val id: String,
+    val key: String = "",
     val name: String,
     val description: String? = null,
     val iconUrl: String? = null,
-    val tier: String
+    val tier: String,
+    val activity: String = "SPECIAL",
+    val threshold: Int = 0
 )
+
+@Serializable
+data class SelectBadgeRequest(val badgeId: String? = null)

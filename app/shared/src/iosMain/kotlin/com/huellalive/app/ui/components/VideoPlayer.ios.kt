@@ -12,7 +12,8 @@ import androidx.compose.ui.Modifier
 actual fun VideoPlayer(
     videoUrl: String,
     isPlaying: Boolean,
-    modifier: Modifier
+    modifier: Modifier,
+    onPlaybackState: (VideoPlaybackState) -> Unit
 ) {
     // iOS video player — implementar con AVPlayer en Fase 11
     Box(modifier = modifier.background(MaterialTheme.colorScheme.surface), contentAlignment = Alignment.Center) {

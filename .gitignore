@@ -1,0 +1,7 @@
+
+# Entregables generados / temporales
+entregables/
+deploy/*.zip
+presentacion/*.inspect.ndjson
+presentacion/HuellaLive_presentacion.pptx
+presentacion/HuellaLive_presentacion_v2.pptx

@@ -9,6 +9,16 @@ data class LoginRequest(
 )
 
 @Serializable
+data class FirebaseLoginRequest(val idToken: String)
+
+@Serializable
+data class FirebaseProfilePreviewDto(
+    val email: String,
+    val name: String,
+    val avatarUrl: String? = null
+)
+
+@Serializable
 data class RegisterHumanRequest(
     val name: String,
     val email: String,

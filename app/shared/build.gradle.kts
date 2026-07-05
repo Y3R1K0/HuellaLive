@@ -39,7 +39,7 @@ kotlin {
         commonMain.dependencies {
             implementation(compose.runtime)
             implementation(compose.foundation)
-            implementation(compose.material3)
+            implementation(libs.compose.material3)
             implementation(compose.materialIconsExtended)
             implementation(compose.ui)
             implementation(compose.components.resources)
@@ -68,6 +68,7 @@ kotlin {
         }
 
         androidMain.dependencies {
+            implementation(libs.android.activity.compose)
             implementation(libs.koin.android)
             implementation(libs.ktor.client.android)
             implementation(libs.coroutines.android)
@@ -77,6 +78,11 @@ kotlin {
             implementation(libs.android.maps.compose)
             implementation(libs.android.play.location)
             implementation(libs.android.play.auth)
+            implementation(libs.android.maplibre)
+            implementation(libs.firebase.auth)
+            implementation(libs.android.credentials)
+            implementation(libs.android.credentials.play.auth)
+            implementation(libs.android.googleid)
         }
 
         iosMain.dependencies {

@@ -1,6 +1,6 @@
 import { Controller, Post, Body, HttpCode, UseGuards, Request } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { LoginDto, RegisterHumanDto, RegisterShelterDto, LinkAnimalDto } from './dto/auth.dto';
+import { FirebaseLoginDto, LoginDto, RegisterHumanDto, RegisterShelterDto, LinkAnimalDto } from './dto/auth.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 
 @Controller('auth')
@@ -21,6 +21,18 @@ export class AuthController {
   @HttpCode(200)
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
+  }
+
+  @Post('firebase')
+  @HttpCode(200)
+  loginWithFirebase(@Body() dto: FirebaseLoginDto) {
+    return this.authService.loginWithFirebase(dto.idToken);
+  }
+
+  @Post('firebase/preview')
+  @HttpCode(200)
+  previewFirebaseIdentity(@Body() dto: FirebaseLoginDto) {
+    return this.authService.previewFirebaseIdentity(dto.idToken);
   }
 
   @Post('link-animal')
